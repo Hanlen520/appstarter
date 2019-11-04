@@ -7,8 +7,8 @@
 '''
 # 加密zip ChilkatZip
 
-from .axmlprinter import AXMLPrinter
-from .bytecode import SV
+#from .axmlprinter import AXMLPrinter
+from .axml import AXMLPrinter
 
 import zipfile
 from io import StringIO, BytesIO
@@ -40,7 +40,7 @@ class APKCook:
         if text:
             self.xml = minidom.parseString(self.raw_manifest)
         else:
-            self.xml = minidom.parseString(AXMLPrinter(self.raw_manifest).getBuff())
+            self.xml = minidom.parseString(AXMLPrinter(self.raw_manifest).get_xml())
 
         self.package = self.xml.documentElement.getAttribute("package")
         self.androidversion["Code"] = self.xml.documentElement.getAttribute("android:versionCode")
@@ -245,11 +245,44 @@ class APKCook:
                 
         return out
     
+    def get_activities_all(self):
+        out = []
+        for item in self.xml.getElementsByTagName("activity"):
+            name = item.getAttribute("android:name")
+            out.append(name)
+
+        return out
+    
+    def get_services_all(self):
+        out = []
+        for item in self.xml.getElementsByTagName("service"):
+            name = item.getAttribute("android:name")
+            out.append(name)
+
+        return out
+    
+    def get_receivers_all(self):
+        out = []
+        for item in self.xml.getElementsByTagName("receiver"):
+            name = item.getAttribute("android:name")
+            out.append(name)
+
+        return out
     
     
     def show(self, monkey=False):
+        import re
         if monkey == 'a':
-            import re
+            return self.get_activities_all()
+        elif monkey == 's':
+            return self.get_services_all()
+        elif monkey == 'r':
+            return self.get_receivers_all()
+
+        elif monkey == 'v':
+            #print(self.get_androidversion_name())
+            return self.get_androidversion_name()
+        if monkey == 'ma':
             ret = ",".join(self.get_activities())
             ret = ret.replace(' BROWSABLE', '')
             ret = ret.replace('!activity-alias!', '')
@@ -258,9 +291,15 @@ class APKCook:
             ret = re.sub('@.*?,', ',', ret)
             #print(ret.strip(','))
             return ret.strip(',')
-        elif monkey == 's':
-            import re
+        elif monkey == 'ms':
             ret = ",".join(self.get_services())
+            ret = ret.replace('!disabled!', '')
+            ret += ','
+            ret = re.sub('@.*?,', ',', ret)
+            #print(ret.strip(','))
+            return ret.strip(',')
+        elif monkey == 'mr':
+            ret = ",".join(self.get_receivers())
             ret = ret.replace('!disabled!', '')
             ret += ','
             ret = re.sub('@.*?,', ',', ret)
@@ -278,7 +317,7 @@ class APKCook:
             print ("==Permission:\n"+"\n".join(self.get_permission()))
 
     def output(self):
-        print(AXMLPrinter(self.raw_manifest).getBuff())
+        print(AXMLPrinter(self.raw_manifest).get_xml())
 
 
 if __name__ == "__main__":
