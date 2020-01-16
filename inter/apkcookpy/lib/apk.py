@@ -278,6 +278,18 @@ class APKCook:
             return self.get_services_all()
         elif monkey == 'r':
             return self.get_receivers_all()
+        
+        #browsable
+        elif monkey == 'b':
+            out = []
+            for a in self.get_activities():
+                if ' BROWSABLE' in a:
+                    a = a.replace(' BROWSABLE', '')
+                    a = a.replace('!activity-alias!', '')
+                    a = a.replace('!disabled!', '')
+                    a = re.sub('@.*', '', a)
+                    out.append(a)
+            return out
 
         elif monkey == 'v':
             #print(self.get_androidversion_name())

@@ -1,5 +1,5 @@
 Java.perform(function () {
-    //小米5权限弹框进程：com.lbe.security.miui:ui
+    //mi5权限弹框进程：com.lbe.security.miui:ui
     //原理：在拦截弹框启动函数，直接调用回调函数
     var flag = true
     var count = 0

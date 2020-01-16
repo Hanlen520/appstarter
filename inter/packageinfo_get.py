@@ -1,5 +1,8 @@
-#coding:utf-8
+#!/bin/env python
+#coding:utf8
 
+#requirements
+# requests, beautifulsoup4
 import re
 from random import choice
 import argparse, sys, os
@@ -7,15 +10,22 @@ import argparse, sys, os
 try:
     import requests
 except Exception as e:
-    print('pip install requests')
+    print('pip3 install requests')
     sys.exit()
 
 try:
     from bs4 import BeautifulSoup
 except Exception as e:
-    print('pip install bs4 lxml')
+    print('pip3 install bs4 lxml')
     sys.exit()
 
+try:
+    import lxml
+except Exception as e:
+    print('pip3 install lxml')
+    sys.exit()
+    #print(e)
+#print('requirements ok')
 
 def get_content(url):
     User_Agent = [
@@ -64,6 +74,11 @@ def parse_packageinfo(content):
 
         company = re.findall(u'intro-titles\"><p>(.*?)</p>', content, re.M)
         packageinfo['company'] = company[0]
+
+        name = re.findall(u'intro-titles\"><p>.*?</p><h3>(.*?)</h3>', content, re.M)
+        packageinfo['name'] = name[0]
+
+        #print(packageinfo)
 
         return packageinfo
     
@@ -143,9 +158,13 @@ def get_search(package):
     return result
  ###########
 
-def getpkg(package, same):
+def getpkg(package, same, getversion=False):
     #根据包名获取下载链接、appid等
     packageinfo = get_packageinfo(package)
+    if getversion:
+        if packageinfo:
+            return packageinfo.get('version')+':'+packageinfo.get('update')
+        return False
     if packageinfo:
         #print(package+', '+ packageinfo['appid']+', '+packageinfo['company']+ ', '+packageinfo['download']+ ', '+packageinfo['update'])
         if not same:
@@ -160,7 +179,7 @@ def getpkg(package, same):
             for x in samedevpackage:
                 pkgs.append(x['package'])
             #print(', '.join(pkgs))
-            return ','.join(pkgs)
+            return ', '.join(pkgs)
 
     else:
         #包名前缀情况下，进行模糊查询
@@ -174,16 +193,74 @@ def getpkg(package, same):
             return ''
             #print('检查下包名是否正确，或加上-s选项')
 
+####
+def handlepkgfile(pkgfile):
+    pkglist = []
+    with open(pkgfile) as f:
+        pkglist = f.read().split('\n')
+    resultpkg = []
+    for p in pkglist:
+        pkginfo = get_packageinfo(p)
+        if pkginfo:
+            print(p)
+            resultpkg.append(p)
+            samedev = get_samedev(pkginfo['appid'])
+            tmp = []
+            for s in samedev:
+                tmp.append(s['package'])
+            resultpkg += tmp
+        else:
+            print('error: '+p)
+    resultpkg = list(set(resultpkg))
+    #print(len(resultpkg))
+    #print(",".join(resultpkg))
+    with open(pkgfile+'-all', 'w') as f:
+        f.write("\n".join(resultpkg))
+
+def handlepkgfile_latest(info):
+    if not os.path.isfile(info):
+        print('File not exists')
+        return
+    
+    pkglist = []
+    with open(info) as f:
+        pkglist = f.read().split('\n')
+    resultpkg = []
+    for p in pkglist:
+        pkginfo = get_packageinfo(p)
+        if pkginfo:
+            print(pkginfo.get('update')+': '+p+': '+pkginfo.get('name')+': '+pkginfo.get('company'))
+            resultpkg.append(pkginfo.get('update')+': '+p+': '+pkginfo.get('name')+': '+pkginfo.get('company'))
+        else:
+            resultpkg.append('error: '+p)
+
+    resultpkg.sort(reverse=True)
+    
+    with open(info+'-info', 'w') as f:
+        f.write("\n".join(resultpkg))
+
+#python2 or python3
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='输入包名或包名前缀')
     parser.add_argument("-p", "--package",type=str, help="package name")
     parser.add_argument("-s", "--same", action="store_true", help="是否获取同开发者应用")
-    
+    parser.add_argument("-f", "--file", type=str, help="文件名(测试功能)")
+    parser.add_argument("-i", "--info", type=str, help="包信息")
 
     args = parser.parse_args()
     package = args.package
     same = args.same
     
+    pkgfile = args.file
+    if pkgfile:
+        handlepkgfile(pkgfile)
+        sys.exit()
+
+    info = args.info
+    if info:
+        handlepkgfile_latest(info)
+        sys.exit()
+
     if not package:
         parser.print_help()
         sys.exit()
