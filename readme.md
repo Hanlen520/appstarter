@@ -1,5 +1,6 @@
 # fun
 - Android APP test tool
+- Get apk from android phone rom automatically(with cdex/vdex convert) 
 
 # usage
 - python3 appstarter.py -h
